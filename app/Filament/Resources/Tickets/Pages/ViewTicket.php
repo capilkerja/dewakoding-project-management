@@ -34,18 +34,9 @@ class ViewTicket extends ViewRecord
                 RichEditor::make('comment')
                     ->label('Edit Comment')
                     ->required()
-                    ->toolbarButtons([
-                        'blockquote',
-                        'bold',
-                        'bulletList',
-                        'codeBlock',
-                        'italic',
-                        'link',
-                        'orderedList',
-                        'redo',
-                        'strike',
-                        'undo',
-                    ])
+                    ->fileAttachmentsDisk('public')
+                    ->fileAttachmentsDirectory('attachments')
+                    ->fileAttachmentsVisibility('public')
                     ->extraInputAttributes(['style' => 'min-height: 10rem;']),
             ])
             ->fillForm(function (array $arguments): array {
