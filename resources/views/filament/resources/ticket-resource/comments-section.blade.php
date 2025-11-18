@@ -61,7 +61,7 @@
                                 {!! $comment->comment !!}
                             </div>
                             @if($comment->created_at != $comment->updated_at)
-                                <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                <div class=" text-xs text-gray-400 dark:text-gray-500 mt-1">
                                     (edited {{ $comment->updated_at->diffForHumans() }})
                                 </div>
                             @endif
