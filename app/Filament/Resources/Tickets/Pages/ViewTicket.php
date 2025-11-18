@@ -205,6 +205,7 @@ class ViewTicket extends ViewRecord
                         TextEntry::make('description')
                             ->hiddenLabel()
                             ->html()
+                            ->prose()
                             ->columnSpanFull()
                             ->placeholder('No description provided'),
                     ])
