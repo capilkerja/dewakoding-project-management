@@ -196,9 +196,26 @@
                 touchStartX: 0,
                 touchStartY: 0,
                 scrollStartX: 0,
+                columnScrollPositions: {},
 
                 moveTicketToStatus(ticketId, statusId) {
                     $wire.call('moveTicket', parseInt(ticketId), parseInt(statusId));
+                },
+
+                saveScrollPositions() {
+                    const columns = document.querySelectorAll('.status-column .overflow-y-auto');
+                    columns.forEach((column, index) => {
+                        this.columnScrollPositions[index] = column.scrollTop;
+                    });
+                },
+
+                restoreScrollPositions() {
+                    const columns = document.querySelectorAll('.status-column .overflow-y-auto');
+                    columns.forEach((column, index) => {
+                        if (this.columnScrollPositions[index] !== undefined) {
+                            column.scrollTop = this.columnScrollPositions[index];
+                        }
+                    });
                 },
 
                 init() {
@@ -214,58 +231,74 @@
                 setupPageVisibilityListener() {
                     document.addEventListener('visibilitychange', () => {
                         if (!document.hidden) {
+                            this.saveScrollPositions();
                             setTimeout(() => {
                                 this.removeAllEventListeners();
                                 this.attachAllEventListeners();
+                                this.restoreScrollPositions();
                             }, 100);
                         }
                     });
 
                     window.addEventListener('focus', () => {
+                        this.saveScrollPositions();
                         setTimeout(() => {
                             this.removeAllEventListeners();
                             this.attachAllEventListeners();
+                            this.restoreScrollPositions();
                         }, 100);
                     });
 
                     window.addEventListener('popstate', () => {
+                        this.saveScrollPositions();
                         setTimeout(() => {
                             this.removeAllEventListeners();
                             this.attachAllEventListeners();
+                            this.restoreScrollPositions();
                         }, 200);
                     });
 
                     document.addEventListener('livewire:navigated', () => {
+                        this.saveScrollPositions();
                         setTimeout(() => {
                             this.removeAllEventListeners();
                             this.attachAllEventListeners();
+                            this.restoreScrollPositions();
                         }, 300);
                     });
 
                     document.addEventListener('livewire:load', () => {
+                        this.saveScrollPositions();
                         setTimeout(() => {
                             this.removeAllEventListeners();
                             this.attachAllEventListeners();
+                            this.restoreScrollPositions();
                         }, 100);
                     });
 
                     document.addEventListener('livewire:updated', () => {
+                        this.saveScrollPositions();
                         setTimeout(() => {
                             this.removeAllEventListeners();
                             this.attachAllEventListeners();
+                            this.restoreScrollPositions();
                         }, 100);
                     });
 
                     window.addEventListener('ticket-updated', () => {
+                        this.saveScrollPositions();
                         setTimeout(() => {
                             this.removeAllEventListeners();
                             this.attachAllEventListeners();
+                            this.restoreScrollPositions();
                         }, 150);
                     });
 
                     setInterval(() => {
                         if (document.visibilityState === 'visible') {
+                            this.saveScrollPositions();
                             this.ensureDragDropInitialized();
+                            this.restoreScrollPositions();
                         }
                     }, 2000);
                 },
@@ -596,7 +629,7 @@
                             </div>
                         </div>
 
-                        <div class="p-3 flex flex-col gap-3 flex-1 overflow-y-auto" style="max-height: calc(100% - 60px);" x-data="{ visibleTickets: 10, totalTickets: {{ $status->tickets->count() }} }" x-init="$nextTick(() => { $el.addEventListener('scroll', () => { if ($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 100 && visibleTickets < totalTickets) { visibleTickets = Math.min(visibleTickets + 10, totalTickets); } }); })">
+                        <div class="p-3 flex flex-col gap-3 flex-1 overflow-y-auto" style="max-height: calc(100% - 60px);" x-data="{ visibleTickets: 10, totalTickets: {{ $status->tickets->count() }}, scrollPos: 0 }" x-init="$nextTick(() => { $el.addEventListener('scroll', () => { scrollPos = $el.scrollTop; if ($el.scrollTop + $el.clientHeight >= $el.scrollHeight - 100 && visibleTickets < totalTickets) { visibleTickets = Math.min(visibleTickets + 10, totalTickets); } }); })" x-ref="ticketContainer{{ $status->id }}">
                             @foreach ($status->tickets as $index => $ticket)
                                 <div
                                     class="ticket-card bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 cursor-move"
@@ -658,13 +691,24 @@
                                             </div>
                                         @endif
 
-                                        <button
-                                            type="button"
-                                            wire:click="showTicketDetails({{ $ticket->id }})"
+                                        <a
+                                            href="{{ \App\Filament\Resources\Tickets\TicketResource::getUrl('view', ['record' => $ticket->id]) }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onclick="
+                                                event.preventDefault();
+                                                const container = this.closest('.overflow-y-auto');
+                                                const scrollPos = container.scrollTop;
+                                                window.open(this.href, '_blank');
+                                                setTimeout(() => {
+                                                    container.scrollTop = scrollPos;
+                                                }, 0);
+                                                return false;
+                                            "
                                             class="inline-flex items-center justify-center w-8 h-8 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-primary-600 hover:text-primary-500 dark:text-primary-500 dark:hover:text-primary-400 flex-shrink-0"
                                         >
                                             <x-heroicon-m-eye class="w-4 h-4" />
-                                        </button>
+                                        </a>
                                     </div>
                                 </div>
                             @endforeach
