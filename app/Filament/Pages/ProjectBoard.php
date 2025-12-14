@@ -15,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -43,7 +44,7 @@ class ProjectBoard extends Page
 
     public Collection $projects;
 
-    public Collection $ticketStatuses;
+    // ticketStatuses is now a computed property - see getTicketStatusesProperty()
 
     public ?Ticket $selectedTicket = null;
 
@@ -76,9 +77,7 @@ class ProjectBoard extends Page
             $this->selectedProjectId = (int) $project_id;
             $this->selectedProject = Project::find($project_id);
             $this->loadProjectUsers();
-            $this->loadTicketStatuses();
         } else {
-            $this->ticketStatuses = collect();
             $this->projectUsers = collect();
         }
     }
@@ -101,7 +100,6 @@ class ProjectBoard extends Page
             $this->selectProject($value);
         } else {
             $this->selectedProject = null;
-            $this->ticketStatuses = collect();
             $this->projectUsers = collect();
             $this->selectedUserIds = [];
 
@@ -121,7 +119,6 @@ class ProjectBoard extends Page
 
         if ($this->selectedProject) {
             $this->loadProjectUsers();
-            $this->loadTicketStatuses();
 
             // Use wire:navigate for SPA-like navigation
             $url = static::getUrl(['project_id' => $projectId]);
@@ -129,15 +126,14 @@ class ProjectBoard extends Page
         }
     }
 
-    public function loadTicketStatuses(): void
+    #[Computed]
+    public function ticketStatuses(): Collection
     {
         if (! $this->selectedProject) {
-            $this->ticketStatuses = collect();
-
-            return;
+            return collect();
         }
 
-        $this->ticketStatuses = $this->selectedProject->ticketStatuses()
+        $statuses = $this->selectedProject->ticketStatuses()
             ->with([
                 'tickets' => function ($query) {
                     $query->with([
@@ -152,18 +148,26 @@ class ProjectBoard extends Page
                                 $assigneeQuery->whereIn('users.id', $this->selectedUserIds);
                             });
                         })
-                        ->orderBy('id', 'asc');
+                        ->orderByDesc('created_at')
+                        ->orderByDesc('id');
                 },
             ])
             ->select('id', 'project_id', 'name', 'color', 'sort_order', 'is_completed')
             ->orderBy('sort_order')
             ->get();
 
-        $this->ticketStatuses->each(function ($status) {
+        $statuses->each(function ($status) {
             $sortOrder = $this->sortOrders[$status->id] ?? 'date_created_newest';
             $status->tickets = $this->applySorting($status->tickets, $sortOrder);
         });
 
+        return $statuses;
+    }
+
+    public function loadTicketStatuses(): void
+    {
+        // Force recompute of ticketStatuses by clearing cache
+        unset($this->ticketStatuses);
     }
 
     public function loadProjectUsers(): void
@@ -210,21 +214,25 @@ class ProjectBoard extends Page
     {
         switch ($sortOrder) {
             case 'date_created_newest':
-                return $tickets->sortByDesc('created_at');
+                // Query already ordered by created_at DESC, id DESC - just reset keys
+                return $tickets->values();
             case 'date_created_oldest':
-                return $tickets->sortBy('created_at');
+                return $tickets->sortBy(function ($ticket) {
+                    return $ticket->created_at->timestamp . '_' . str_pad($ticket->id, 10, '0', STR_PAD_LEFT);
+                })->values();
             case 'card_name_alphabetical':
-                return $tickets->sortBy('name');
+                return $tickets->sortBy('name')->values();
             case 'due_date':
                 return $tickets->sortBy(function ($ticket) {
                     return $ticket->due_date ?? '9999-12-31';
-                });
+                })->values();
             case 'priority':
                 return $tickets->sortBy(function ($ticket) {
                     return $ticket->priority ? $ticket->priority->id : 999;
-                });
+                })->values();
             default:
-                return $tickets->sortByDesc('created_at');
+                // Default is same as date_created_newest - query already sorted
+                return $tickets->values();
         }
     }
 
