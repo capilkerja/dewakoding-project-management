@@ -21,13 +21,13 @@ use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\HtmlString;
 
 class TicketResource extends Resource
 {
@@ -77,6 +77,8 @@ class TicketResource extends Resource
                         return auth()->user()->projects()->pluck('name', 'projects.id')->toArray();
                     })
                     ->default($projectId)
+                    ->disabledOn('ticket_on_board')
+                    ->dehydrated()
                     ->required()
                     ->searchable()
                     ->preload()
@@ -113,7 +115,7 @@ class TicketResource extends Resource
 
                 Select::make('epic_id')
                     ->label('Epic')
-                    ->options(function (callable $get) {
+                    ->options(function (Get $get) {
                         $projectId = $get('project_id');
 
                         if (! $projectId) {
@@ -127,7 +129,7 @@ class TicketResource extends Resource
                     ->searchable()
                     ->preload()
                     ->nullable()
-                    ->hidden(fn (callable $get): bool => ! $get('project_id')),
+                    ->hidden(fn (Get $get): bool => ! $get('project_id')),
 
                 TextInput::make('name')
                     ->label('Ticket Name')
@@ -139,14 +141,14 @@ class TicketResource extends Resource
                     ->fileAttachmentsDirectory('attachments')
                     ->columnSpanFull(),
 
-                // Multi-user assignment
+                // // Multi-user assignment
                 Select::make('assignees')
                     ->label('Assigned to')
                     ->multiple()
                     ->relationship(
                         name: 'assignees',
                         titleAttribute: 'name',
-                        modifyQueryUsing: function (Builder $query, callable $get) {
+                        modifyQueryUsing: function (Builder $query, Get $get) {
                             $projectId = $get('project_id');
                             if (! $projectId) {
                                 return $query->whereRaw('1 = 0');
@@ -165,7 +167,7 @@ class TicketResource extends Resource
                     ->searchable()
                     ->preload()
                     ->helperText('Select multiple users to assign this ticket to. Only project members can be assigned.')
-                    ->hidden(fn (callable $get): bool => ! $get('project_id'))
+                    ->hidden(fn (Get $get): bool => ! $get('project_id'))
                     ->live(),
 
                 DatePicker::make('start_date')
@@ -180,7 +182,7 @@ class TicketResource extends Resource
                     ->label('Created By')
                     ->relationship('creator', 'name')
                     ->disabled()
-                    ->hiddenOn('create'),
+                    ->hiddenOn(['create', 'ticket_on_board']),
             ]);
     }
 
