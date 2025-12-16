@@ -50,6 +50,9 @@ class NotesRelationManager extends RelationManager
                 RichEditor::make('content')
                     ->required()
                     ->columnSpanFull()
+                    ->fileAttachmentsDisk('public')
+                    ->fileAttachmentsDirectory('attachments')
+                    ->fileAttachmentsVisibility('public')
                     ->toolbarButtons([
                         'attachFiles',
                         'blockquote',

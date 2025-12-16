@@ -120,6 +120,9 @@ class TicketsRelationManager extends RelationManager
                 
                 RichEditor::make('description')
                     ->columnSpanFull()
+                    ->fileAttachmentsDisk('public')
+                    ->fileAttachmentsDirectory('attachments')
+                    ->fileAttachmentsVisibility('public')
                     ->nullable(),
 
                 // Show created by in edit mode
