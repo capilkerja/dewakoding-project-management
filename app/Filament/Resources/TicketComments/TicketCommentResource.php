@@ -32,7 +32,10 @@ class TicketCommentResource extends Resource
             ->components([
                 RichEditor::make('comment')
                     ->required()
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                    ->fileAttachmentsDisk('public')
+                    ->fileAttachmentsDirectory('attachments')
+                    ->fileAttachmentsVisibility('public'),
             ]);
     }
 

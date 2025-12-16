@@ -139,7 +139,10 @@ class TicketResource extends Resource
 
                 RichEditor::make('description')
                     ->label('Description')
+                    ->fileAttachmentsDisk('public')
                     ->fileAttachmentsDirectory('attachments')
+                    ->fileAttachmentsVisibility('public')
+                    ->fileAttachmentsAcceptedFileTypes(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'video/mp4'])
                     ->columnSpanFull(),
 
                 // // Multi-user assignment
