@@ -48,6 +48,9 @@ class EpicsRelationManager extends RelationManager
                     ->nullable(),
                 RichEditor::make('description')
                     ->columnSpanFull()
+                    ->fileAttachmentsDisk('public')
+                    ->fileAttachmentsDirectory('attachments')
+                    ->fileAttachmentsVisibility('public')
                     ->nullable(),
             ]);
     }
